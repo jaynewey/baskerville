@@ -2,6 +2,8 @@
 name = "baskerville_macro"
 version.workspace = true
 edition = "2021"
+description = "Macros for Baskerville - Infer and validate data-type schemas in Rust."
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
