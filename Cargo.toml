@@ -1,0 +1,30 @@
+[workspace]
+members = [
+    ".",
+    "baskerville_macro",
+]
+
+[workspace.package]
+version = "0.1.0"
+
+[package]
+name = "baskerville"
+description = "Infer and validate data-type schemas in Rust."
+version.workspace = true
+edition = "2021"
+readme = "README.md"
+homepage = "https://github.com/jaynewey/baskerville"
+repository = "https://github.com/jaynewey/baskerville"
+authors = ["Jay Newey <jay.newey@protonmail.com>"]
+license = "MIT"
+
+[dependencies]
+pyo3 = { version = "0.19.2", optional = true }
+chrono = { version = "0.4.27", optional = true }
+csv = "1.2.2"
+baskerville_macro = { path = "./baskerville_macro", version = "0.1.0" }
+
+[features]
+default = ["time"]
+python = ["dep:pyo3"]
+time = ["dep:chrono"]
