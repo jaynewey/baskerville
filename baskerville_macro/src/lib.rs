@@ -34,4 +34,3 @@ fn impl_validator_macro(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Can only derive for Enum"),
     }
 }
-

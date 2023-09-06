@@ -10,7 +10,7 @@ pub mod text;
 pub mod time;
 pub mod unique;
 #[cfg(feature = "time")]
-pub use time::{DateTime, Date, Time};
+pub use time::{Date, DateTime, Time};
 
 pub use nullable::Empty;
 pub use numeric::{Float, Integer};

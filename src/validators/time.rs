@@ -1,6 +1,6 @@
 use crate::Validator;
 use chrono::prelude::DateTime as ChronoDateTime;
-use chrono::prelude::{NaiveDateTime, NaiveDate, NaiveTime};
+use chrono::prelude::{NaiveDate, NaiveDateTime, NaiveTime};
 
 #[derive(Debug, Clone)]
 pub struct Date {
@@ -25,9 +25,8 @@ impl Default for Date {
 
 impl Validator for Date {
     fn validate(&mut self, value: &str) -> bool {
-        self.formats.retain(|format|
-            NaiveDate::parse_from_str(value, format).is_ok()
-        );
+        self.formats
+            .retain(|format| NaiveDate::parse_from_str(value, format).is_ok());
         !self.formats.is_empty()
     }
 }
@@ -53,14 +52,11 @@ impl Default for Time {
 
 impl Validator for Time {
     fn validate(&mut self, value: &str) -> bool {
-        self.formats.retain(|format|
-            NaiveTime::parse_from_str(value, format).is_ok()
-        );
+        self.formats
+            .retain(|format| NaiveTime::parse_from_str(value, format).is_ok());
         !self.formats.is_empty()
     }
 }
-
-
 
 #[derive(Debug, Clone)]
 pub struct DateTime {
@@ -98,12 +94,13 @@ impl Validator for DateTime {
             DateTimeFormat::RFC3339 => ChronoDateTime::parse_from_rfc3339(value).is_ok(),
             DateTimeFormat::Strftime(strftime) => {
                 NaiveDateTime::parse_from_str(value, strftime).is_ok()
-            },
-            DateTimeFormat::Unix => {
-                value.parse::<i64>().map(
-                    |timestamp| NaiveDateTime::from_timestamp_opt(timestamp, 0)
-                ).ok().flatten().is_some()
             }
+            DateTimeFormat::Unix => value
+                .parse::<i64>()
+                .map(|timestamp| NaiveDateTime::from_timestamp_opt(timestamp, 0))
+                .ok()
+                .flatten()
+                .is_some(),
         });
         !self.formats.is_empty()
     }
@@ -112,8 +109,8 @@ impl Validator for DateTime {
 #[cfg(test)]
 mod test {
     use crate::validators::time::DateTimeFormat;
-    use crate::{Date, Time, DateTime};
     use crate::Validator;
+    use crate::{Date, DateTime, Time};
 
     #[test]
     fn date() {
@@ -123,7 +120,9 @@ mod test {
         assert_eq!("%Y-%m-%d", validator.formats[0]);
         assert!(!validator.validate("22/01/2001"));
 
-        let mut validator = Date { formats: vec!["%Y %m %d".into()] };
+        let mut validator = Date {
+            formats: vec!["%Y %m %d".into()],
+        };
         assert!(validator.validate("2001 01 22"));
         assert!(!validator.validate("2001-01-22"));
     }
@@ -136,7 +135,9 @@ mod test {
         assert_eq!("%H:%M:%S", validator.formats[0]);
         assert!(!validator.validate("12:34PM"));
 
-        let mut validator = Time { formats: vec!["T%H:%M".into()] };
+        let mut validator = Time {
+            formats: vec!["T%H:%M".into()],
+        };
         assert!(validator.validate("T12:34"));
         assert!(!validator.validate("12:34PM"));
     }
@@ -156,7 +157,9 @@ mod test {
         assert_eq!(DateTimeFormat::RFC2822, validator.formats[0]);
         assert!(!validator.validate("2001-01-22T00:00:00+00:00"));
 
-        let mut validator = DateTime { formats: vec![DateTimeFormat::Unix] };
+        let mut validator = DateTime {
+            formats: vec![DateTimeFormat::Unix],
+        };
         assert!(validator.validate("980121600"));
         assert!(!validator.validate("2001-01-22T00:00:00+00:00"));
     }

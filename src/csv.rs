@@ -2,7 +2,7 @@ use std::error::Error;
 
 use csv::{Reader, ReaderBuilder};
 
-use crate::{DataType, DateTime, Empty, Field, Float, Integer, Text, Validator, Date, Time};
+use crate::{DataType, Date, DateTime, Empty, Field, Float, Integer, Text, Time, Validator};
 
 pub enum CsvInput<'a> {
     Path(&'a str),
