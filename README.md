@@ -11,10 +11,55 @@
 [![docs.rs](https://img.shields.io/docsrs/baskerville)](https://docs.rs/baskerville/)
 ![GitHub](https://img.shields.io/github/license/jaynewey/baskerville)
 
-Infer and validate data-type schemas in Rust.
+Infer and validate data-type schemas in Rust and Python.
 
 [Rust](https://github.com/jaynewey/baskerville)
 •
 [Python](https://github.com/jaynewey/baskerville-py)
 
 </div>
+
+## Installation
+
+```
+cargo add baskerville
+```
+
+## Example
+
+```csv
+# mascots.csv
+Name,LOC,Species
+Ferris,42,Crab
+Corro,7,Urchin
+```
+
+```rust
+use baskerville::{infer_csv_with_options, CsvInput, InferOptions};
+
+fn main() {
+    let fields = infer_csv_with_options(
+        CsvInput::Path("mascots.csv"),
+        &mut InferOptions {
+            has_headers: true,
+            ..InferOptions::default()
+        },
+    )
+    .unwrap();
+    println!("{fields:?}");
+}
+```
+
+Output:
+
+```rust
+[Field { name: Some("Name"), valid_types: [Text(Text { min_length: Some(5), max_length: Some(6) })], nullable: false }, Field { name: Some("LOC"), valid_types: [Integer(Integer { min_value: Some(7), max_value: Some(42), leading_plus: false }), Float(Float { min_value: Some(7.0), max_value: Some(42.0), leading_plus: false, e_notation: false }), Text(Text { min_length: Some(1), max_length: Some(2) })], nullable: false }, Field { name: Some("Species"), valid_types: [Text(Text { min_length: Some(4), max_length: Some(6) })], nullable: false }]
+```
+
+## Contributing
+
+<!-- TODO: add "pre-commit checklist" when CI is set up -->
+
+### Versioning
+
+The repo bases versioning from [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
