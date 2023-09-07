@@ -11,6 +11,10 @@
 [![docs.rs](https://img.shields.io/docsrs/baskerville)](https://docs.rs/baskerville/)
 ![GitHub](https://img.shields.io/github/license/jaynewey/baskerville)
 
-# Infer and validate data-type schemas in Rust.
+Infer and validate data-type schemas in Rust.
+
+[Rust](https://github.com/jaynewey/baskerville)
+•
+[Python](https://github.com/jaynewey/baskerville-py)
 
 </div>
