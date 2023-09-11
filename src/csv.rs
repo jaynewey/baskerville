@@ -2,7 +2,9 @@ use std::error::Error;
 
 use csv::{Reader, ReaderBuilder};
 
-use crate::{DataType, Date, DateTime, Empty, Field, Float, Integer, Text, Time, Validator};
+use crate::{
+    field::Fields, DataType, Date, DateTime, Empty, Field, Float, Integer, Text, Time, Validator,
+};
 
 pub enum CsvInput<'a> {
     Path(&'a str),
@@ -43,28 +45,30 @@ impl Default for InferOptions {
 fn infer_csv_with_reader<R>(
     options: &mut InferOptions,
     reader: &mut Reader<R>,
-) -> Result<Vec<Field>, Box<dyn Error>>
+) -> Result<Fields, Box<dyn Error>>
 where
     R: std::io::Read,
 {
-    let mut fields: Vec<Field> = reader
-        .headers()?
-        .iter()
-        .map(|value| {
-            Field::new(
-                if options.has_headers {
-                    if options.null_validator.validate(value) {
-                        None
+    let mut fields = Fields(
+        reader
+            .headers()?
+            .iter()
+            .map(|value| {
+                Field::new(
+                    if options.has_headers {
+                        if options.null_validator.validate(value) {
+                            None
+                        } else {
+                            Some(value.to_string())
+                        }
                     } else {
-                        Some(value.to_string())
-                    }
-                } else {
-                    None
-                },
-                options.data_types.clone(),
-            )
-        })
-        .collect();
+                        None
+                    },
+                    options.data_types.clone(),
+                )
+            })
+            .collect(),
+    );
     for record in reader.records() {
         let record = record?;
 
@@ -92,7 +96,7 @@ where
 pub fn infer_csv_with_options(
     input: CsvInput,
     options: &mut InferOptions,
-) -> Result<Vec<Field>, Box<dyn Error>> {
+) -> Result<Fields, Box<dyn Error>> {
     let mut reader_builder = ReaderBuilder::new();
     let reader_builder = reader_builder
         .has_headers(options.has_headers)
@@ -112,7 +116,7 @@ pub fn infer_csv_with_options(
     }
 }
 
-pub fn infer_csv(input: CsvInput) -> Result<Vec<Field>, Box<dyn Error>> {
+pub fn infer_csv(input: CsvInput) -> Result<Fields, Box<dyn Error>> {
     infer_csv_with_options(input, &mut InferOptions::default())
 }
 
@@ -159,7 +163,7 @@ mod test {
 
         assert_eq!(3, fields.len());
         assert_eq!(
-            fields.into_iter().map(|f| f.name).collect::<Vec<_>>(),
+            fields.iter().cloned().map(|f| f.name).collect::<Vec<_>>(),
             vec![Some("col1".into()), Some("col2".into()), None]
         );
         Ok(())
