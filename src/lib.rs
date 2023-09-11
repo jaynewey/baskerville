@@ -1,7 +1,7 @@
 mod field;
 pub mod validators;
 
-pub use field::Field;
+pub use field::{Field, Fields};
 pub use validators::{DataType, Empty, Float, Integer, Literal, Text, Unique, Validator};
 
 #[cfg(feature = "time")]
