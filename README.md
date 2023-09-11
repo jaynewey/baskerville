@@ -46,14 +46,20 @@ fn main() {
         },
     )
     .unwrap();
-    println!("{fields:?}");
+    println!("{fields}");
 }
 ```
 
 Output:
 
-```rust
-[Field { name: Some("Name"), valid_types: [Text(Text { min_length: Some(5), max_length: Some(6) })], nullable: false }, Field { name: Some("LOC"), valid_types: [Integer(Integer { min_value: Some(7), max_value: Some(42), leading_plus: false }), Float(Float { min_value: Some(7.0), max_value: Some(42.0), leading_plus: false, e_notation: false }), Text(Text { min_length: Some(1), max_length: Some(2) })], nullable: false }, Field { name: Some("Species"), valid_types: [Text(Text { min_length: Some(4), max_length: Some(6) })], nullable: false }]
+```
+╭──────┬─────────┬─────────╮
+│ Name │ LOC     │ Species │
+├──────┼─────────┼─────────┤
+│ Text │ Integer │ Text    │
+│      │ Float   │         │
+│      │ Text    │         │
+╰──────┴─────────┴─────────╯
 ```
 
 ## Contributing
