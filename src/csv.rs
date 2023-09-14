@@ -1,7 +1,7 @@
 use std::error::Error;
 
-pub use csv::Trim;
 use csv::{Reader, ReaderBuilder};
+pub use csv::{Terminator, Trim};
 
 use crate::{
     field::Fields, DataType, Date, DateTime, Empty, Field, Float, Integer, Text, Time, Validator,
@@ -21,6 +21,7 @@ pub struct InferOptions {
     pub quote: u8,
     pub quoting: bool,
     pub trim: Trim,
+    pub terminator: Terminator,
 }
 
 impl Default for InferOptions {
@@ -44,6 +45,7 @@ impl Default for InferOptions {
             quote: b'"',
             quoting: true,
             trim: Trim::None,
+            terminator: Terminator::CRLF,
         }
     }
 }
@@ -110,7 +112,8 @@ pub fn infer_csv_with_options(
         .delimiter(options.delimiter)
         .quote(options.quote)
         .quoting(options.quoting)
-        .trim(options.trim);
+        .trim(options.trim)
+        .terminator(options.terminator);
 
     match input {
         CsvInput::Path(path) => {
