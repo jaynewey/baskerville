@@ -8,4 +8,4 @@ pub use validators::{DataType, Empty, Float, Integer, Literal, Text, Unique, Val
 pub use validators::{Date, DateTime, Time};
 
 mod csv;
-pub use crate::csv::{infer_csv, infer_csv_with_options, CsvInput, InferOptions};
+pub use crate::csv::{infer_csv, infer_csv_with_options, CsvInput, InferOptions, validate_csv_with_options};

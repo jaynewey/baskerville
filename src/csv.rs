@@ -42,6 +42,98 @@ impl Default for InferOptions {
     }
 }
 
+#[derive(Debug)]
+struct ValidationError {
+    line_no: usize,
+    column_no: usize,
+    details: String,
+    formatted: String,
+}
+
+impl ValidationError {
+    fn new(line_no: usize, column_no: usize, details: &str) -> Self {
+        Self {
+            line_no,
+            column_no,
+            details: details.into(),
+            formatted: format!("Error on line {line_no} in column {column_no}: {details}")
+        }
+    }
+}
+
+impl Error for ValidationError {
+    fn description(&self) -> &str {
+        &self.formatted
+    }
+}
+
+use std::fmt;
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}", self.formatted)
+    }
+}
+
+fn validate_csv_with_reader<R>(
+    fields: &mut [Field],
+    options: &mut InferOptions,
+    reader: &mut Reader<R>,
+) -> Result<(), Box<dyn Error>>
+where
+    R: std::io::Read,
+{
+    for (line_no, record) in reader.records().enumerate() {
+        let record = record?;
+
+        for (column_no, (value, field)) in record.iter().zip(fields.iter_mut()).enumerate() {
+            if !field.nullable && options.null_validator.validate(value) {
+                return Err(Box::new(ValidationError::new(
+                    line_no,
+                    column_no,
+                    "Nullable value"
+                )))
+            } else {
+                for data_type in field.valid_types.iter_mut() {
+                    if !data_type.validate(value) {
+                        return Err(Box::new(ValidationError::new(
+                            line_no,
+                            column_no,
+                            "Invalid value"
+                        )))
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn validate_csv_with_options(
+    fields: &mut [Field],
+    input: CsvInput,
+    options: &mut InferOptions,
+) -> Result<(), Box<dyn Error>> {
+    let mut reader_builder = ReaderBuilder::new();
+    let reader_builder = reader_builder
+        .has_headers(options.has_headers)
+        .flexible(options.flexible)
+        .delimiter(options.delimiter)
+        .quote(options.quote)
+        .quoting(options.quoting);
+
+    match input {
+        CsvInput::Path(path) => {
+            validate_csv_with_reader(fields, options, &mut reader_builder.from_path(path)?)
+        }
+        CsvInput::Value(value) => {
+            let mut reader_builder = reader_builder.from_reader(value.as_bytes());
+            validate_csv_with_reader(fields, options, &mut reader_builder)
+        }
+    }
+}
+
+
 fn infer_csv_with_reader<R>(
     options: &mut InferOptions,
     reader: &mut Reader<R>,
