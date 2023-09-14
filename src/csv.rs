@@ -28,8 +28,11 @@ impl Default for InferOptions {
                 DataType::Integer(Integer::default()),
                 DataType::Float(Float::default()),
                 DataType::Text(Text::default()),
+                #[cfg(feature = "time")]
                 DataType::Date(Date::default()),
+                #[cfg(feature = "time")]
                 DataType::Time(Time::default()),
+                #[cfg(feature = "time")]
                 DataType::DateTime(DateTime::default()),
             ],
             null_validator: DataType::Empty(Empty),
