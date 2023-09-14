@@ -18,6 +18,7 @@ pub struct InferOptions {
     pub has_headers: bool,
     pub flexible: bool,
     pub delimiter: u8,
+    pub escape: Option<u8>,
     pub quote: u8,
     pub quoting: bool,
     pub trim: Trim,
@@ -42,6 +43,7 @@ impl Default for InferOptions {
             has_headers: false,
             flexible: false,
             delimiter: b',',
+            escape: None,
             quote: b'"',
             quoting: true,
             trim: Trim::None,
@@ -110,6 +112,7 @@ pub fn infer_csv_with_options(
         .has_headers(options.has_headers)
         .flexible(options.flexible)
         .delimiter(options.delimiter)
+        .escape(options.escape)
         .quote(options.quote)
         .quoting(options.quoting)
         .trim(options.trim)
