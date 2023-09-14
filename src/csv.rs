@@ -1,5 +1,6 @@
 use std::error::Error;
 
+pub use csv::Trim;
 use csv::{Reader, ReaderBuilder};
 
 use crate::{
@@ -19,6 +20,7 @@ pub struct InferOptions {
     pub delimiter: u8,
     pub quote: u8,
     pub quoting: bool,
+    pub trim: Trim,
 }
 
 impl Default for InferOptions {
@@ -41,6 +43,7 @@ impl Default for InferOptions {
             delimiter: b',',
             quote: b'"',
             quoting: true,
+            trim: Trim::None,
         }
     }
 }
@@ -106,7 +109,8 @@ pub fn infer_csv_with_options(
         .flexible(options.flexible)
         .delimiter(options.delimiter)
         .quote(options.quote)
-        .quoting(options.quoting);
+        .quoting(options.quoting)
+        .trim(options.trim);
 
     match input {
         CsvInput::Path(path) => {
