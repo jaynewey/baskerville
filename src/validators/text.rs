@@ -1,5 +1,7 @@
 use crate::Validator;
 
+use super::ValidationError;
+
 #[derive(Default, Debug, Clone)]
 pub struct Text {
     pub min_length: Option<usize>,
@@ -7,14 +9,18 @@ pub struct Text {
 }
 
 impl Validator for Text {
-    fn validate(&mut self, value: &str) -> bool {
+    fn validate(&self, _: &str) -> Result<(), ValidationError> {
+        Ok(())
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
         self.min_length = self.min_length.map_or(Some(value.len()), |min| {
             Some(std::cmp::min(min, value.len()))
         });
         self.max_length = self.max_length.map_or(Some(value.len()), |max| {
             Some(std::cmp::max(max, value.len()))
         });
-        true
+        self.validate(value)
     }
 }
 
@@ -34,8 +40,16 @@ impl Literal {
 }
 
 impl Validator for Literal {
-    fn validate(&mut self, value: &str) -> bool {
-        self.values.contains(&value.to_string())
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        if self.values.contains(&value.to_string()) {
+            Ok(())
+        } else {
+            Err(ValidationError { details: format!("value \"{value}\" is not one of {:?}", self.values) })
+        }
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
+        self.validate(value)
     }
 }
 
@@ -46,8 +60,8 @@ mod test {
     #[test]
     fn text() {
         let mut validator = Text::default();
-        assert!(validator.validate("Ferris"));
-        assert!(validator.validate("🦀"));
+        assert!(validator.consider("Ferris").is_ok());
+        assert!(validator.consider("🦀").is_ok());
         assert_eq!(Some(4), validator.min_length);
         assert_eq!(Some(6), validator.max_length);
     }
@@ -55,8 +69,8 @@ mod test {
     #[test]
     fn literal() {
         let mut validator = Literal::new(vec!["Ferris".into(), "Corro".into()]);
-        assert!(validator.validate("Ferris"));
-        assert!(validator.validate("Corro"));
-        assert!(!validator.validate("Duke"));
+        assert!(validator.consider("Ferris").is_ok());
+        assert!(validator.consider("Corro").is_ok());
+        assert!(validator.consider("Duke").is_err());
     }
 }

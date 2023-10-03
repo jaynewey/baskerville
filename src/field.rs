@@ -29,7 +29,7 @@ impl Field {
 
     pub fn consider(&mut self, value: &str) {
         self.valid_types
-            .retain_mut(|data_type| data_type.validate(value))
+            .retain_mut(|data_type| data_type.consider(value).is_ok())
     }
 }
 

@@ -2,6 +2,8 @@ use crate::Validator;
 use chrono::prelude::DateTime as ChronoDateTime;
 use chrono::prelude::{NaiveDate, NaiveDateTime, NaiveTime};
 
+use super::ValidationError;
+
 #[derive(Debug, Clone)]
 pub struct Date {
     pub formats: Vec<String>,
@@ -24,10 +26,22 @@ impl Default for Date {
 }
 
 impl Validator for Date {
-    fn validate(&mut self, value: &str) -> bool {
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        if self.formats.iter().any(|format| NaiveDate::parse_from_str(value, format).is_ok()) {
+            Ok(())
+        } else {
+            Err(ValidationError { details: format!("value does not match any of {:?}", self.formats) })
+        }
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
         self.formats
             .retain(|format| NaiveDate::parse_from_str(value, format).is_ok());
-        !self.formats.is_empty()
+        if self.formats.is_empty() {
+            Err(ValidationError { details: format!("value does not match formats seen: {:?}", self.formats) })
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -51,10 +65,22 @@ impl Default for Time {
 }
 
 impl Validator for Time {
-    fn validate(&mut self, value: &str) -> bool {
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        if self.formats.iter().any(|format| NaiveTime::parse_from_str(value, format).is_ok()) {
+            Ok(())
+        } else {
+            Err(ValidationError { details: format!("value does not match any of {:?}", self.formats) })
+        }
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
         self.formats
             .retain(|format| NaiveTime::parse_from_str(value, format).is_ok());
-        !self.formats.is_empty()
+        if self.formats.is_empty() {
+            Err(ValidationError { details: format!("value does not match formats seen: {:?}", self.formats) })
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -87,9 +113,9 @@ impl Default for DateTime {
     }
 }
 
-impl Validator for DateTime {
-    fn validate(&mut self, value: &str) -> bool {
-        self.formats.retain(|format| match format {
+impl DateTime {
+    fn is_formatted(&self, format: &DateTimeFormat, value: &str) -> bool {
+        match format {
             DateTimeFormat::RFC2822 => ChronoDateTime::parse_from_rfc2822(value).is_ok(),
             DateTimeFormat::RFC3339 => ChronoDateTime::parse_from_rfc3339(value).is_ok(),
             DateTimeFormat::Strftime(strftime) => {
@@ -101,8 +127,27 @@ impl Validator for DateTime {
                 .ok()
                 .flatten()
                 .is_some(),
-        });
-        !self.formats.is_empty()
+        }
+    }
+}
+
+impl Validator for DateTime {
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        if self.formats.iter().any(|format| self.is_formatted(format, value)) {
+            Ok(())
+        } else {
+            Err(ValidationError { details: format!("value does not match any of {:?}", self.formats.clone()) })
+        }
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
+        self.formats = self.formats.iter().cloned()
+            .filter(|format| self.is_formatted(format, value)).collect();
+        if self.formats.is_empty() {
+            Err(ValidationError { details: format!("value does not match formats seen: {:?}", self.formats.clone()) })
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -115,52 +160,52 @@ mod test {
     #[test]
     fn date() {
         let mut validator = Date::default();
-        assert!(validator.validate("2001-01-22"));
+        assert!(validator.consider("2001-01-22").is_ok());
         assert_eq!(1, validator.formats.len());
         assert_eq!("%Y-%m-%d", validator.formats[0]);
-        assert!(!validator.validate("22/01/2001"));
+        assert!(validator.consider("22/01/2001").is_err());
 
         let mut validator = Date {
             formats: vec!["%Y %m %d".into()],
         };
-        assert!(validator.validate("2001 01 22"));
-        assert!(!validator.validate("2001-01-22"));
+        assert!(validator.consider("2001 01 22").is_ok());
+        assert!(validator.consider("2001-01-22").is_err());
     }
 
     #[test]
     fn time() {
         let mut validator = Time::default();
-        assert!(validator.validate("12:34:56"));
+        assert!(validator.consider("12:34:56").is_ok());
         assert_eq!(1, validator.formats.len());
         assert_eq!("%H:%M:%S", validator.formats[0]);
-        assert!(!validator.validate("12:34PM"));
+        assert!(validator.consider("12:34PM").is_err());
 
         let mut validator = Time {
             formats: vec!["T%H:%M".into()],
         };
-        assert!(validator.validate("T12:34"));
-        assert!(!validator.validate("12:34PM"));
+        assert!(validator.consider("T12:34").is_ok());
+        assert!(validator.consider("12:34PM").is_err());
     }
 
     #[test]
     fn date_time() {
         let mut validator = DateTime::default();
-        assert!(validator.validate("2001-01-22T00:00:00+00:00"));
-        assert!(validator.validate("2001-01-22T00:00:00Z"));
+        assert!(validator.consider("2001-01-22T00:00:00+00:00").is_ok());
+        assert!(validator.consider("2001-01-22T00:00:00Z").is_ok());
         assert_eq!(1, validator.formats.len());
         assert_eq!(DateTimeFormat::RFC3339, validator.formats[0]);
-        assert!(!validator.validate("Mon, 22 Jan 2001 00:00:00 GMT"));
+        assert!(validator.consider("Mon, 22 Jan 2001 00:00:00 GMT").is_err());
 
         let mut validator = DateTime::default();
-        assert!(validator.validate("Mon, 22 Jan 2001 00:00:00 GMT"));
+        assert!(validator.consider("Mon, 22 Jan 2001 00:00:00 GMT").is_ok());
         assert_eq!(1, validator.formats.len());
         assert_eq!(DateTimeFormat::RFC2822, validator.formats[0]);
-        assert!(!validator.validate("2001-01-22T00:00:00+00:00"));
+        assert!(validator.consider("2001-01-22T00:00:00+00:00").is_err());
 
         let mut validator = DateTime {
             formats: vec![DateTimeFormat::Unix],
         };
-        assert!(validator.validate("980121600"));
-        assert!(!validator.validate("2001-01-22T00:00:00+00:00"));
+        assert!(validator.consider("980121600").is_ok());
+        assert!(validator.consider("2001-01-22T00:00:00+00:00").is_err());
     }
 }

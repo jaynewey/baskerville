@@ -1,15 +1,40 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::{RwLock, PoisonError, RwLockWriteGuard, Arc}};
 
 use crate::Validator;
 
-#[derive(Default, Debug, Clone)]
+use super::ValidationError;
+
+#[derive(Default, Debug)]
 pub struct Unique {
-    values: HashSet<String>,
+    values: Arc<RwLock<HashSet<String>>>,
+}
+
+impl Clone for Unique {
+    fn clone(&self) -> Self {
+        Unique {
+            values: self.values.clone(),
+        }
+    }
+}
+
+impl From<PoisonError<RwLockWriteGuard<'_, HashSet<String>>>> for ValidationError {
+    fn from(err: PoisonError<RwLockWriteGuard<HashSet<String>>>) -> Self {
+        ValidationError { details: err.to_string() }
+    }
 }
 
 impl Validator for Unique {
-    fn validate(&mut self, value: &str) -> bool {
-        self.values.insert(value.to_string())
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        let mut values = self.values.write().map_err(ValidationError::from)?;
+        if values.insert(value.to_string()) {
+            Ok(())
+        } else {
+            Err(ValidationError { details: "value has been seen before".to_string() })
+        }
+    }
+
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError> {
+        self.validate(value)
     }
 }
 
@@ -19,9 +44,9 @@ mod test {
 
     #[test]
     fn id() {
-        let mut validator = Unique::default();
-        assert!(validator.validate("Ferris"));
-        assert!(validator.validate("Corro"));
-        assert!(!validator.validate("Ferris"));
+        let validator = Unique::default();
+        assert!(validator.validate("Ferris").is_ok());
+        assert!(validator.validate("Corro").is_ok());
+        assert!(validator.validate("Ferris").is_err());
     }
 }

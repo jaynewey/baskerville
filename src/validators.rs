@@ -17,8 +17,63 @@ pub use numeric::{Float, Integer};
 pub use text::{Literal, Text};
 pub use unique::Unique;
 
+use std::{fmt, error::Error};
+
+#[derive(Debug)]
+pub struct ValidationError {
+    pub details: String,
+}
+
+impl Error for ValidationError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}", self.details)
+    }
+}
+
+
+
+#[derive(Debug)]
+pub struct SchemaError {
+    pub line_no: usize,
+    pub column_no: usize,
+    pub details: String,
+    formatted: String,
+}
+
+impl SchemaError {
+    pub fn new(line_no: usize, column_no: usize, details: String) -> Self {
+        Self {
+            line_no,
+            column_no,
+            details: details.clone(),
+            formatted: format!("Error on line {line_no} in column {column_no}: {details}")
+        }
+    }
+}
+
+impl Error for SchemaError {
+    fn description(&self) -> &str {
+        &self.formatted
+    }
+}
+
+
+impl fmt::Display for SchemaError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}", self.formatted)
+    }
+}
+
+
 pub trait Validator: std::fmt::Debug {
-    fn validate(&mut self, value: &str) -> bool;
+    fn validate(&self, value: &str) -> Result<(), ValidationError>;
+    fn consider(&mut self, value: &str) -> Result<(), ValidationError>;
 }
 
 #[cfg(feature = "python")]

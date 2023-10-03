@@ -7,6 +7,8 @@ use crate::{
     field::Fields, DataType, Date, DateTime, Empty, Field, Float, Integer, Text, Time, Validator,
 };
 
+use crate::validators::SchemaError;
+
 pub enum CsvInput<'a> {
     Path(&'a str),
     Value(&'a str),
@@ -52,65 +54,34 @@ impl Default for InferOptions {
     }
 }
 
-#[derive(Debug)]
-struct ValidationError {
-    line_no: usize,
-    column_no: usize,
-    details: String,
-    formatted: String,
-}
-
-impl ValidationError {
-    fn new(line_no: usize, column_no: usize, details: &str) -> Self {
-        Self {
-            line_no,
-            column_no,
-            details: details.into(),
-            formatted: format!("Error on line {line_no} in column {column_no}: {details}")
-        }
-    }
-}
-
-impl Error for ValidationError {
-    fn description(&self) -> &str {
-        &self.formatted
-    }
-}
-
-use std::fmt;
-
-impl fmt::Display for ValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.formatted)
-    }
-}
-
 fn validate_csv_with_reader<R>(
-    fields: &mut [Field],
+    fields: Vec<Field>,
     options: &mut InferOptions,
     reader: &mut Reader<R>,
 ) -> Result<(), Box<dyn Error>>
 where
     R: std::io::Read,
 {
+    let mut fields = fields.clone();
+
     for (line_no, record) in reader.records().enumerate() {
         let record = record?;
 
         for (column_no, (value, field)) in record.iter().zip(fields.iter_mut()).enumerate() {
-            if !field.nullable && options.null_validator.validate(value) {
-                return Err(Box::new(ValidationError::new(
-                    line_no,
-                    column_no,
-                    "Nullable value"
+            if !field.nullable && options.null_validator.validate(value).is_ok() {
+                return Err(Box::new(SchemaError::new(
+                    line_no + 1,
+                    column_no + 1,
+                    "Nullable value".to_string()
                 )))
             } else {
                 for data_type in field.valid_types.iter_mut() {
-                    if !data_type.validate(value) {
-                        return Err(Box::new(ValidationError::new(
-                            line_no,
-                            column_no,
-                            "Invalid value"
-                        )))
+                    match data_type.validate(value) {
+                        Ok(_) => (),
+                        Err(e) => return Err(Box::new(
+                                SchemaError::new(line_no, column_no, e.details)
+                        ))
+
                     }
                 }
             }
@@ -120,7 +91,7 @@ where
 }
 
 pub fn validate_csv_with_options(
-    fields: &mut [Field],
+    fields: Vec<Field>,
     input: CsvInput,
     options: &mut InferOptions,
 ) -> Result<(), Box<dyn Error>> {
@@ -158,7 +129,7 @@ where
             .map(|value| {
                 Field::new(
                     if options.has_headers {
-                        if options.null_validator.validate(value) {
+                        if options.null_validator.validate(value).is_ok() {
                             None
                         } else {
                             Some(value.to_string())
@@ -185,7 +156,7 @@ where
         }
 
         for (value, field) in record.iter().zip(fields.iter_mut()) {
-            if options.null_validator.validate(value) {
+            if options.null_validator.validate(value).is_ok() {
                 field.nullable = true
             } else {
                 field.consider(value)
