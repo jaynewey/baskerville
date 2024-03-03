@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 
 [package]
 name = "baskerville"
@@ -22,7 +22,7 @@ license = "MIT"
 pyo3 = { version = "0.19.2", optional = true }
 chrono = { version = "0.4.27", optional = true }
 csv = "1.2.2"
-baskerville_macro = { path = "./baskerville_macro", version = "0.2.0" }
+baskerville_macro = { path = "./baskerville_macro", version = "0.3.0" }
 tabled = "0.14.0"
 
 [dev-dependencies]

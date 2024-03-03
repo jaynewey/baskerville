@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/jaynewey/baskerville/compare/baskerville-v0.2.0...baskerville-v0.3.0) - 2024-03-03
+
+### Added
+- add csv escape option
+- add csv terminator option
+- add csv trim option
+
+### Fixed
+- wall default time validators behind feature flag
+
+### Other
+- add ci workflow
+
 ## [0.2.0](https://github.com/jaynewey/baskerville/compare/baskerville-v0.1.0...baskerville-v0.2.0) - 2023-09-11
 
 ### Added
